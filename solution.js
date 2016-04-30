@@ -1,41 +1,85 @@
 function Stacker(){
 	var queue = [];
-	var visited = [];
+	var previouslyVisitedRelation = [];
+	var distanceFromOrigin = 0;
   // switches
 	var foundTower = false;
-
-
-// cell types
+	var hasBlock = false;
+  // cell types
 	var
 	EMPTY = 0,
 	WALL = 1,
 	BLOCK = 2,
 	GOLD = 3;
 
-	this.findTower = function(cell){
-		// breadth first search to the tower
-		if(cell.left.type === GOLD || cell.right.type === GOLD || cell.up.type === GOLD || cell.down.type === GOLD){
-			console.log('yo found the gold dawg');
-			foundTower = true;
-		}
-		return 'right'
-		console.log(cell);
-	};
+	var oppositeDirection = {
+		up: 'down',
+		down: 'up',
+		left: 'right',
+		right: 'left'
+	}
+
+
+	this.findBlocks = function(){}
+	this.returnToTower = function(){}
+	this.stackBlocks = function(){}
+
+
 
 // Replace this with your own wizardry
-this.turn = function(cell){
-	if(!foundTower){
-		//breadth first search to find the tower
-		// this.findTower(cell);
-		console.log(cell);
-	}
-	else {
-		// find nearest blocks and assign an inceasing number to every block around the towner
-		// pickup block and put it in a spiral pattern around the tower.
+	this.turn = function(cell){
+		if(!foundTower){
+			// assign all squares a distance from your starting point.
+			// if
+			var directions = ['left', 'up', 'right', 'down'];
+			// cell.distanceFromOrigin = distanceFromOrigin;
+			// cell.left.distanceFromOrigin = distanceFromOrigin + 1;
+			// cell.right.distanceFromOrigin = distanceFromOrigin + 1;
+			// cell.up.distanceFromOrigin = distanceFromOrigin + 1;
+			// cell.down.distanceFromOrigin = distanceFromOrigin + 1;
+			// distanceFromOrigin += 1;
+			return findTower(cell, previouslyVisitedRelation.pop());
+		}
+		else {
+			// find nearest blocks and assign an inceasing number to every block around the towner
+			// pickup block and put it in a spiral pattern around the tower.
+		}
+
 	}
 
+	function findTower(cell, previouslyVisited){
+		var nextMoveDecided = false;
+		var actions = ['left', 'up', 'right', 'down'];
+		console.log('cell looks like: ', cell);
+		if(cell.left.type === GOLD || cell.up.type === GOLD || cell.right.type === GOLD || cell.down.type === GOLD){
+			console.log('found the tower!')
+			foundTower = true;
+			return 'drop';
+		}
+		if(cell.type === BLOCK && !hasBlock){
+			console.log('picking up block')
+			hasBlock = true;
+			return 'pickup';
+		}
+		var validPathFound = false;
+		var possibilities = 4;
+		var n = Math.random(possibilities) * possibilities >> 0;
 
-}
+		while(!validPathFound){
+			if(cell[actions[n]].type === WALL || cell[actions[n]] === cell[oppositeDirection[previouslyVisited]]){
+				actions.splice(n, 1);
+				possibilities -= 1;
+				n = Math.random(possibilities) * possibilities >> 0;
+			} else {
+				validPathFound = true;
+			}
+		}
+		previouslyVisitedRelation.push(actions[n]);
+		return actions[n]
+	};
+
+
+
 
 // More wizardry here
 
@@ -44,10 +88,9 @@ this.turn = function(cell){
 
 
 	// Pick an action randomly
-	// var n = Math.random() * 6 >> 0;
-	// if (n == 0) return "left";
-	// if (n == 1) return "up";
-	// if (n == 2) return "right";
-	// if (n == 3) return "down";
-	// if (n == 4) return "pickup";
-	// if (n == 5) return "drop";
+	// pickup
+	// drop
+	// up
+	// down
+	// left
+	// right
