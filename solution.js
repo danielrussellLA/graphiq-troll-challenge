@@ -1,7 +1,7 @@
 function Stacker(){
 	var queue = [];
 	var previouslyVisitedRelation = [];
-	var distanceFromOrigin = 0;
+	// var distanceFromOrigin = 0;
   // switches
 	var foundTower = false;
 	var hasBlock = false;
@@ -29,16 +29,8 @@ function Stacker(){
 // Replace this with your own wizardry
 	this.turn = function(cell){
 		if(!foundTower){
-			// assign all squares a distance from your starting point.
-			// if
-			var directions = ['left', 'up', 'right', 'down'];
-			// cell.distanceFromOrigin = distanceFromOrigin;
-			// cell.left.distanceFromOrigin = distanceFromOrigin + 1;
-			// cell.right.distanceFromOrigin = distanceFromOrigin + 1;
-			// cell.up.distanceFromOrigin = distanceFromOrigin + 1;
-			// cell.down.distanceFromOrigin = distanceFromOrigin + 1;
-			// distanceFromOrigin += 1;
-			return findTower(cell, previouslyVisitedRelation.pop());
+			var visitNext = findTower(cell, previouslyVisitedRelation.pop());
+			return visitNext;
 		}
 		else {
 			// find nearest blocks and assign an inceasing number to every block around the towner
@@ -48,11 +40,12 @@ function Stacker(){
 	}
 
 	function findTower(cell, previouslyVisited){
+
 		var nextMoveDecided = false;
 		var actions = ['left', 'up', 'right', 'down'];
-		console.log('cell looks like: ', cell);
+
 		if(cell.left.type === GOLD || cell.up.type === GOLD || cell.right.type === GOLD || cell.down.type === GOLD){
-			console.log('found the tower!')
+			console.log('found the tower!');
 			foundTower = true;
 			return 'drop';
 		}
@@ -65,20 +58,41 @@ function Stacker(){
 		var possibilities = 4;
 		var n = Math.random(possibilities) * possibilities >> 0;
 
+		// console.log('previously visitied cell = ', cell[oppositeDirection[previouslyVisited]]);
+		// console.log('previously visitied cell DIRECTION= ', oppositeDirection[previouslyVisited]);
+
 		while(!validPathFound){
-			if(cell[actions[n]].type === WALL || cell[actions[n]] === cell[oppositeDirection[previouslyVisited]]){
+			if(stuck(cell)[0] === true){
+				return stuck(cell)[1];
+			}
+			else if(cell[actions[n]].type === WALL || actions[n] === oppositeDirection[previouslyVisited]){
 				actions.splice(n, 1);
-				possibilities -= 1;
+				possibilities = actions.length;
 				n = Math.random(possibilities) * possibilities >> 0;
 			} else {
 				validPathFound = true;
 			}
 		}
 		previouslyVisitedRelation.push(actions[n]);
-		return actions[n]
+		return actions[n];
 	};
 
-
+	function stuck(cell){
+		console.log('im stuck!!!!!!')
+		if(cell.up.type === WALL && cell.left.type === WALL && cell.right.type === WALL){
+			return [true, 'down'];
+		}
+		if(cell.left.type === WALL && cell.down.type === WALL && cell.right.type === WALL){
+			return [true, 'up'];
+		}
+		if(cell.up.type === WALL && cell.left.type === WALL && cell.down.type === WALL){
+			return [true, 'right'];
+		}
+		if(cell.up.type === WALL && cell.right.type === WALL && cell.down.type === WALL){
+			return [true, 'left'];
+		}
+		return [false, null];
+	}
 
 
 // More wizardry here
