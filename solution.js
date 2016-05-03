@@ -24,7 +24,7 @@ function Stacker(){
 	var hasBlock = false;
 	var moveHistory = [];
 	// directions
-	var move = ['right', 'up', 'left', 'down'];
+	var move = ['left', 'up', 'right', 'down'];
 	var opposite = {
 		up: 'down',
 		down: 'up',
@@ -80,6 +80,7 @@ function Stacker(){
 			// board = buildBoard(16);
 			// moveHistory = new Array();
 		}
+
 		// set walls as visited so we don't run into them a bunch of times.
 		if(board[xPos][yPos] === false){
 			var boardLength = board.length;
@@ -105,15 +106,15 @@ function Stacker(){
 			var nextMove = move[index];
 			if(!adjacentCellVisited(nextMove)){
 				moveHistory.push(opposite[nextMove]);
-
-				return moveNext(nextMove);
+				return moveHere(nextMove);
 			}
 		}
-
-		return moveNext(moveHistory.pop());
+		// if we're stuck, move to the previous position and update coordinates so we have access to what we previously visited
+		var previousMove = moveHistory.pop()
+		return moveHere(previousMove);
 	}
 
-	function moveNext (nextMove){
+	function moveHere(nextMove){
 		var boardLength = board.length
 		if(nextMove === 'left'){
 			xPos = properIndex(xPos - 1, boardLength);
@@ -139,18 +140,17 @@ function Stacker(){
 		console.log('checking adjacent')
 		console.log('nextMove', nextMove)
 		var boardLength = board.length
-		switch(nextMove){
-			case "left" :
+		if(nextMove === 'left'){
 				return board[properIndex(xPos - 1, boardLength)][yPos];
-			case "up" :
+		}
+		if(nextMove === 'up'){
 				return board[xPos][properIndex(yPos - 1, boardLength)];
-			case "right" :
+		}
+		if(nextMove === 'right'){
 				return board[properIndex(xPos + 1, boardLength)][yPos];
-			case "down" : 
-				return board[xPos][properIndex(yPos + 1, boardLength)];
-			default :
-				console.log("ERROR in isAdjacentCellUnvisited. Unexpected parameter.");
-				return true;
+		}
+		if(nextMove === 'down'){
+				return board[xPos][properIndex(yPos + 1, boardLength)];				
 		}
 	}
 
