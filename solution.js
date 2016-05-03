@@ -24,7 +24,7 @@ function Stacker(){
 	var hasBlock = false;
 	var moveHistory = [];
 	// directions
-	var move = ['left', 'up', 'right', 'down'];
+	var move = ['right', 'up', 'left', 'down'];
 	var opposite = {
 		up: 'down',
 		down: 'up',
@@ -35,10 +35,11 @@ function Stacker(){
 	var towerX = -1;
 	var towerY = -1;
 	var foundTower = false;
+	var atBottomOfTower = false;
+	var rePosition = [];
 	var board = new Array();
 
 
-	var rePosition = [];
 	
 
 // Replace this with your own wizardry
@@ -51,15 +52,23 @@ function Stacker(){
 			}
 			if(foundTower){
 				console.log('found the tower...')
-				return;
+				if(!atBottomOfTower && currentState === state.towerSearch){
+					moveToBottomOfTower(cell);
+					console.log(rePosition)
+					return moveHere(rePosition.shift()) || 'drop';
+				}
+				if(atBottomOfTower){
+					currentState = state.findBlock;
+					console.log('atBottomOfTower');
+				}
+				
 			} else {
 				// mapCells(cell);
-				isAdjacentCellTower(cell);
 				return searchFor(cell, GOLD)
 			}
 		}
 		if(currentState === state.findBlock){
-
+			console.log('lets find a block...')
 		}
 		if(currentState === state.returnToBottomOfTower){
 
@@ -77,8 +86,10 @@ function Stacker(){
 		console.log('board', board)
 
 		if(currentState === state.towerSearch){
-			// board = buildBoard(16);
-			// moveHistory = new Array();
+			if(isAdjacentCellTower(cell)){
+				foundTower = true;
+				return 'drop'
+			}
 		}
 
 		// set walls as visited so we don't run into them a bunch of times.
@@ -100,7 +111,6 @@ function Stacker(){
 		}
 
 		// decide where to go next
-		var random = Math.random() * move.length >> 0;
 		for(var i = 0; i < move.length; i++){
 			var index = i
 			var nextMove = move[index];
@@ -110,7 +120,10 @@ function Stacker(){
 			}
 		}
 		// if we're stuck, move to the previous position and update coordinates so we have access to what we previously visited
-		var previousMove = moveHistory.pop()
+		var previousMove = moveHistory.pop();
+		// if there are no more moves in our history (which happens rarely) then just pick a random move so we arent stuck
+		// var random = Math.random() * move.length >> 0;
+
 		return moveHere(previousMove);
 	}
 
@@ -345,12 +358,13 @@ function Stacker(){
 	}
 
 	function moveToBottomOfTower(cell) {
+		console.log('moving to bottom')
 		if(cell.left.type === GOLD){
-			rePosition.push('down');
+			rePosition.push('up');
 			rePosition.push('left');
 		}
 		if(cell.up.type === GOLD){
-			rePosition = [];
+			atBottomOfTower = true;
 		}
 		if(cell.right.type === GOLD){
 			rePosition.push('down');
@@ -359,10 +373,8 @@ function Stacker(){
 		if(cell.down.type === GOLD){
 			rePosition.push('left');
 			rePosition.push('down');
-			rePosition.push('down');
-			rePosition.push('right');
 		}
-		// console.log('rePosition', rePosition);
+		console.log('rePosition', rePosition);
 		// console.log('found tower!');
 	}
 
