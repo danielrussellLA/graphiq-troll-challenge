@@ -38,19 +38,23 @@ function Stacker(){
 	var atBottomOfTower = false;
 	var rePosition = [];
 	var board = new Array();
-	var mappedCells = new Array();
-
 	
+	// make a copy of the board to map the visited cells' contents to use during findblock mode
+	var mappedCells = buildBoard(16);
+
+	var blockCount = 0;
 
 // Replace this with your own wizardry
 	this.turn = function(cell){
+		
+		// record current cell and its surrounding cells on mappedCells. 
+		// this will be important during block finding stage
+		recordCell(cell);
 		if(currentState === state.towerSearch){
 			if(firstMove){
 				firstMove = false;
 				// make a board to easily find visited points
 				board = buildBoard(16);
-				// make a copy of the board to map the visited cells' contents to use during findblock mode
-				mappedCells = buildBoard(16);
 				return 'drop';
 			}
 			if(foundTower){
@@ -69,9 +73,11 @@ function Stacker(){
 				// mapCells(cell);
 				return searchForTower(cell)
 			}
+			// recordCell(cell);
 		}
 		if(currentState === state.findBlock){
 			console.log('lets find a block...')
+			console.log('block count : ', blockCount);
 		}
 		if(currentState === state.returnToBottomOfTower){
 
@@ -94,9 +100,6 @@ function Stacker(){
 				return 'drop'
 			}
 		}
-
-		// record current cell and its surrounding cells on mappedCells. This will be important during block finding stage
-		recordCell(cell);
 
 		// set walls as visited so we don't run into them a bunch of times.
 		if(board[xPos][yPos] === false){
@@ -126,6 +129,8 @@ function Stacker(){
 		}
 		// if we're stuck, move to the previous position and update coordinates so we have access to what we previously visited
 		var previousMove = moveHistory.pop();
+		var randomMove = move[Math.random() * move.length >> 0]
+
 		return moveHere(previousMove);
 	}
 
@@ -150,7 +155,6 @@ function Stacker(){
 		console.log('ERROR: unexpected input:' + nextMove);
 	}
 
-
 	function isAdjacentCellVisited(nextMove) {
 		console.log('checking adjacent')
 		console.log('nextMove', nextMove)
@@ -168,7 +172,6 @@ function Stacker(){
 				return board[xPos][properIndex(yPos + 1, boardLength)];				
 		}
 	}
-
 
 	function isAdjacentCellTower(cell){
 		var boardLength = board.length
@@ -224,28 +227,42 @@ function Stacker(){
 		// console.log('found tower!');
 	}
 
-
-
 	function recordCell(cell){
 		var mapLength = mappedCells.length;
 		// current
-		mappedCells[xPos][yPos] = cell;
+		if(!mappedCells[xPos][yPos]){
+			mappedCells[xPos][yPos] = cell;
+			if(mappedCells[xPos][yPos].type === BLOCK){
+				blockCount++;
+			}
+		}
 		// left
 		if(!mappedCells[properIndex(xPos - 1, mapLength)][yPos]){
 			mappedCells[properIndex(xPos - 1, mapLength)][yPos] = cell.left;
+			if(mappedCells[properIndex(xPos - 1, mapLength)][yPos].type === BLOCK){
+				blockCount++;
+			}
 		}
 		// up
 		if(!mappedCells[xPos][properIndex(yPos - 1), mapLength]){
 			mappedCells[xPos][properIndex(yPos - 1), mapLength] = cell.up;
-			up = cell.up;
+			if(mappedCells[xPos][properIndex(yPos - 1), mapLength].type === BLOCK){
+				blockCount++;
+			}
 		}
 		// right
 		if(!mappedCells[properIndex(xPos + 1, mapLength)][yPos]){
 			mappedCells[properIndex(xPos + 1, mapLength)][yPos] = cell.right;
+			if(mappedCells[properIndex(xPos + 1, mapLength)][yPos].type === BLOCK){
+				blockCount++;
+			}
 		}
 		// down
 		if(!mappedCells[xPos][properIndex(yPos + 1), mapLength]){
 			mappedCells[xPos][properIndex(yPos + 1), mapLength] = cell.down;
+			if(mappedCells[xPos][properIndex(yPos + 1), mapLength].type === BLOCK){
+				blockCount++;
+			}
 		}
 
 		console.log('mappedCells', mappedCells)
