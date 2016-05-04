@@ -38,7 +38,7 @@ function Stacker(){
 	var atBottomOfTower = false;
 	var rePosition = [];
 	var board = new Array();
-
+	var mappedCells = new Array();
 
 	
 
@@ -47,7 +47,10 @@ function Stacker(){
 		if(currentState === state.towerSearch){
 			if(firstMove){
 				firstMove = false;
-				buildBoard(16);
+				// make a board to easily find visited points
+				board = buildBoard(16);
+				// make a copy of the board to map the visited cells' contents to use during findblock mode
+				mappedCells = buildBoard(16);
 				return 'drop';
 			}
 			if(foundTower){
@@ -64,7 +67,7 @@ function Stacker(){
 				
 			} else {
 				// mapCells(cell);
-				return searchFor(cell, GOLD)
+				return searchForTower(cell)
 			}
 		}
 		if(currentState === state.findBlock){
@@ -82,7 +85,7 @@ function Stacker(){
 		}
 	}
 
-	function searchFor(cell, target){
+	function searchForTower(cell){
 		console.log('board', board)
 
 		if(currentState === state.towerSearch){
@@ -91,6 +94,9 @@ function Stacker(){
 				return 'drop'
 			}
 		}
+
+		// record current cell and its surrounding cells on mappedCells. This will be important during block finding stage
+		recordCell(cell);
 
 		// set walls as visited so we don't run into them a bunch of times.
 		if(board[xPos][yPos] === false){
@@ -110,10 +116,9 @@ function Stacker(){
 			}
 		}
 
-		// decide where to go next
+		// choose next move
 		for(var i = 0; i < move.length; i++){
-			var index = i
-			var nextMove = move[index];
+			var nextMove = move[i];
 			if(!isAdjacentCellVisited(nextMove)){
 				moveHistory.push(opposite[nextMove]);
 				return moveHere(nextMove);
@@ -121,9 +126,6 @@ function Stacker(){
 		}
 		// if we're stuck, move to the previous position and update coordinates so we have access to what we previously visited
 		var previousMove = moveHistory.pop();
-		// if there are no more moves in our history (which happens rarely) then just pick a random move so we arent stuck
-		// var random = Math.random() * move.length >> 0;
-
 		return moveHere(previousMove);
 	}
 
@@ -223,27 +225,53 @@ function Stacker(){
 	}
 
 
+
+	function recordCell(cell){
+		var mapLength = mappedCells.length;
+		// current
+		mappedCells[xPos][yPos] = cell;
+		// left
+		if(!mappedCells[properIndex(xPos - 1, mapLength)][yPos]){
+			mappedCells[properIndex(xPos - 1, mapLength)][yPos] = cell.left;
+		}
+		// up
+		if(!mappedCells[xPos][properIndex(yPos - 1), mapLength]){
+			mappedCells[xPos][properIndex(yPos - 1), mapLength] = cell.up;
+			up = cell.up;
+		}
+		// right
+		if(!mappedCells[properIndex(xPos + 1, mapLength)][yPos]){
+			mappedCells[properIndex(xPos + 1, mapLength)][yPos] = cell.right;
+		}
+		// down
+		if(!mappedCells[xPos][properIndex(yPos + 1), mapLength]){
+			mappedCells[xPos][properIndex(yPos + 1), mapLength] = cell.down;
+		}
+
+		console.log('mappedCells', mappedCells)
+	}
+
 	function buildBoard(size) {
-		board = new Array(size);
+		var grid = new Array(size);
 		for(var i = 0; i < size; i++) {
-			board[i] = new Array(size);
+			grid[i] = new Array(size);
 			for(var j = 0; j < size; j++){
-				board[i][j] = false;
+				grid[i][j] = false;
 			}
 		}
 		// mark the tower and stairs as visited so troll will not search for blocks there.
 		if(foundTower) {
-			var boardLength = board.length;
-			board[towerX][towerY] = true; // tower
-			board[towerX][properIndex(towerY + 1, boardLength)] = true; // 1 down
-			board[properIndex(towerX - 1, boardLength)][properIndex(towerY + 1, boardLength)] = true; // 2 down-left
-			board[properIndex(towerX - 1, boardLength)][towerY] = true; // 3 left
-			board[properIndex(towerX - 1, boardLength)][properIndex(towerY - 1, boardLength)] = true; // 4 up-left
-			board[towerX][properIndex(towerY - 1, boardLength)] = true; // 5 up
-			board[properIndex(towerX + 1, boardLength)][properIndex(towerY - 1, boardLength)] = true; // 6 left-down
-			board[properIndex(towerX + 1, boardLength)][towerY] = true; // right 7;
+			var gridLength = grid.length;
+			grid[towerX][towerY] = true; // tower
+			grid[towerX][properIndex(towerY + 1, gridLength)] = true; // 1 down
+			grid[properIndex(towerX - 1, gridLength)][properIndex(towerY + 1, gridLength)] = true; // 2 down-left
+			grid[properIndex(towerX - 1, gridLength)][towerY] = true; // 3 left
+			grid[properIndex(towerX - 1, gridLength)][properIndex(towerY - 1, gridLength)] = true; // 4 up-left
+			grid[towerX][properIndex(towerY - 1, gridLength)] = true; // 5 up
+			grid[properIndex(towerX + 1, gridLength)][properIndex(towerY - 1, gridLength)] = true; // 6 left-down
+			grid[properIndex(towerX + 1, gridLength)][towerY] = true; // right 7;
 		}
-
+		return grid;
 	}
 
   //  to account for negative indexes, we perofrm this action to translate the current index
