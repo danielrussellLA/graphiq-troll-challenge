@@ -1,6 +1,6 @@
-function Stacker(){
-	
-/************************* VARS  ****************************************/ 
+function Stacker(){	
+
+/************************* MAIN VARIABLES  ****************************************/ 
  // cell types 
 	var
 	EMPTY = 0,
@@ -47,11 +47,6 @@ function Stacker(){
 	var stairStatusCompleted = false;
 	var rePosition = [];
 	var board = new Array();
-	
-	// make a copy of the board to record the visited cells' contents to use in findblock mode
-	var mappedCells = buildBoard(16);
-
-	var blockCount = 0;
 
 /************************* APP ****************************************/ 
 	this.turn = function(cell){
@@ -66,10 +61,8 @@ function Stacker(){
 				return 'drop';
 			}
 			if(foundTower){
-				console.log('found the tower...')
 				if(!atBottomOfTower && currentState === state.towerSearch){
 					moveToBottomOfTower(cell);
-					console.log('is this messing me up?')
 					return moveHere(rePosition.shift()) || 'drop';
 				}
 				if(atBottomOfTower){
@@ -77,7 +70,6 @@ function Stacker(){
 					board = buildBoard(16);
 					moveHistory.length = 0;
 					currentState = state.findBlock;
-					console.log('atBottomOfTower');
 				}
 				
 			} else {
@@ -87,26 +79,19 @@ function Stacker(){
 		}
 
 		if(currentState === state.findBlock){
-			console.log('lets find a block...')
-			console.log('block count : ', blockCount);
 			if(towerJustDiscovered){
-				// towerJustDiscovered = false;
 		    recordCell(cell);
 		    return getStairStatus(cell);
-				// give every cell a number in mappedCells to help with A* search calculations
-				// orderMappedCells(mappedCells);
 			}
 			if(stairStatusCompleted && !atBottomOfTower){
-				 console.log('trying to go back to bottom of tower')
 				 moveToBottomOfTower(cell);
 				 return moveHere(rePosition.shift()) || 'drop';
 			}
-			console.log('initiating smart search again!')
+			
 			return smartSearch(cell);
 		}
 		
 		if(currentState === state.buildStairCase){
-			console.log('state.buildStairCase');
 			recordCell(cell);
 			return buildStairCase(cell);
 		}
@@ -118,7 +103,6 @@ function Stacker(){
 
 /************************* MAIN ****************************************/ 
 	function smartSearch(cell){
-		console.log('board', board)
 
 		if(currentState === state.towerSearch){
 			if(isAdjacentCellTower(cell)){
@@ -135,62 +119,28 @@ function Stacker(){
 			}
 			if(hasBlock){
 				if(isAdjacentCellTower(cell)){
-					// console.log('yeah we in here..')
 					currentState = state.buildStairCase;
-
 					// you have a block so pickup will do nothing. we just want to be able to fire buildStaircase.
 					return 'pickup';
 				}
 				var stepBackToTower = moveHistory.pop();
 				return moveHere(stepBackToTower);
 			}
-				console.log('its 148')
-			if(isAdjacentCellBlock(cell) !== false && 
-				 hasBlock === false){
-						var moveToBlock = isAdjacentCellBlock(cell);
-						console.log('moveToBlockis', moveToBlock);
-						console.log('cell.left', cell.left)
-						console.log('cell.right', cell.right)
-						console.log('cell.up', cell.up)
-						console.log('cell.down', cell.down)
-						if(!isAdjacentCellVisited(moveToBlock)){
-							moveHistory.push(opposite[moveToBlock]);
-							return moveHere(moveToBlock);
-						}
+			if(isAdjacentCellBlock(cell) !== false && hasBlock === false){
+				var moveToBlock = isAdjacentCellBlock(cell);
+				if(!isAdjacentCellVisited(moveToBlock)){
+					moveHistory.push(opposite[moveToBlock]);
+					return moveHere(moveToBlock);
+				}
 			} 
-			
-
 		}
 		
-		// set walls as visited so we don't run into them a bunch of times.
-		function avoidWalls(){
-			if(board[xPos][yPos] === false){
-				var boardLength = board.length;
-				board[xPos][yPos] = true;
-				if(cell.left.type === WALL || cell.left.level - 1 > cell.level){
-					board[properIndex(xPos - 1, boardLength)][yPos] = true;
-				}
-				if(cell.right.type === WALL || cell.right.level - 1 > cell.level){
-					board[properIndex(xPos + 1, boardLength)][yPos] = true;
-				}
-				if(cell.up.type === WALL || cell.up.level - 1 > cell.level){
-					board[xPos][properIndex(yPos - 1, boardLength)] = true;
-				}
-				if(cell.down.type === WALL || cell.down.type - 1 > cell.level){
-					board[xPos][properIndex(yPos + 1, boardLength)] = true;
-				}
-			}
-		}
-
-		avoidWalls();
-
-
-	
+		// set walls as visited so troll doesn't run into them a bunch of times.
+		avoidWalls(cell);
 
 		// choose next move
 		for(var i = 0; i < move.length; i++){
 			var nextMove = move[i];
-			console.log('its 194')
 			if(!isAdjacentCellVisited(nextMove)){
 				moveHistory.push(opposite[nextMove]);
 				return moveHere(nextMove);
@@ -200,7 +150,6 @@ function Stacker(){
 		// so we have access to what we previously visited
 		var previousMove = moveHistory.pop();
 		var randomMove = move[Math.random() * move.length >> 0]
-
 		return moveHere(previousMove) || moveHere(randomMove);
 	}
 
@@ -229,24 +178,20 @@ function Stacker(){
 
 	var directionsToBuildStairs = [];
 	var justPlacedABlock = false;
-	var turn = 1;
 	function buildStairCase(cell){
-		console.log('determineWhichCellToAddTo is now equal to', determineWhichCellToAddTo(stairs));
-		console.log('stairs are currently:', stairs)
-		if(stairs['7'].level === 7 && turn > 1){
+		if(stairs['7'].level === 7){
 			currentState === state.GAMEOVER;
 			return moveHere('left');
 		}
 		
 		if(directionsToBuildStairs.length){
 			if(directionsToBuildStairs[0] === 'drop'){
-				console.log('directionsToBuildStairs is now:', directionsToBuildStairs);
 				return directionsToBuildStairs.shift();;
 			}
 			return moveHere(directionsToBuildStairs.shift());
 		}
 
-		console.log('building the staircase...')
+	
 		if(determineWhichCellToAddTo(stairs) === 7 && !justPlacedABlock){
 			directionsToBuildStairs.push('left');
 			directionsToBuildStairs.push('up');
@@ -299,48 +244,119 @@ function Stacker(){
 			return 'pickup'
 		}
 		if(determineWhichCellToAddTo(stairs) === 1 && !justPlacedABlock){
-			console.log('why am i placing a block here yet?')
 			directionsToBuildStairs.push('drop');
 			justPlacedABlock = true;
 			return 'pickup'
 		}
 		
-		turn++;
 
 		if(!isAtBottomOfTower(cell)) {
-			// console.log('cell.up should be the tower...', cell.up);
-			// moveToBottomOfTower(cell);
 			recordCell(cell);
-			// var nextMove = rePosition.shift();
 			return descendStairsFrom(xPos, yPos)
 		}
 		if(isAtBottomOfTower(cell)) {
-			console.log('stair status', stairs)
-			console.log('this might be it...')
-			console.log('bottom stair.level', stairs['1'].level);
 			justPlacedABlock = false;
 			finishedDescendingStairs = true;
 			board = buildBoard(16);
 			hasBlock = false;
 			currentState = state.findBlock;
-			// if(cell.level === 1){
-			// 	return 'up';
-			// }	else {
-				return 'drop';
-			// }
+			return 'drop';
 		}
-		// console.log('directions to bottom of tower are now:', rePosition);
-		// if(rePosition.length === 0){
-		// 	console.log('yo rePosition.length is wack!')
-		// 	currentState = state.findBlock;
-		// }
-		// return moveHere(nextMove);
+
 	}
+
+	
+/************************* HELPERS ****************************************/ 
+
+	function moveHere(nextMove){
+		var boardLength = board.length
+		if(nextMove === 'left'){
+			xPos = properIndex(xPos - 1, boardLength);
+			return 'left'
+		}
+		if(nextMove === 'up'){
+			yPos = properIndex(yPos - 1, boardLength)
+			return 'up'
+		}
+		if(nextMove === 'right'){
+			xPos = properIndex(xPos + 1, boardLength);
+			return 'right';
+		}
+		if(nextMove === 'down'){
+			yPos =  properIndex(yPos + 1, boardLength);
+			return 'down';
+		}
+	}
+
+	function avoidWalls(cell){
+		if(board[xPos][yPos] === false){
+			var boardLength = board.length;
+			board[xPos][yPos] = true;
+			if(cell.left.type === WALL || cell.left.level - 1 > cell.level){
+				board[properIndex(xPos - 1, boardLength)][yPos] = true;
+			}
+			if(cell.right.type === WALL || cell.right.level - 1 > cell.level){
+				board[properIndex(xPos + 1, boardLength)][yPos] = true;
+			}
+			if(cell.up.type === WALL || cell.up.level - 1 > cell.level){
+				board[xPos][properIndex(yPos - 1, boardLength)] = true;
+			}
+			if(cell.down.type === WALL || cell.down.type - 1 > cell.level){
+				board[xPos][properIndex(yPos + 1, boardLength)] = true;
+			}
+		}
+	}
+
+
+	function isAdjacentCellVisited(nextMove) {
+		var boardLength = board.length
+		if(nextMove === 'left'){
+				return board[properIndex(xPos - 1, boardLength)][yPos];
+		}
+		if(nextMove === 'up'){
+				return board[xPos][properIndex(yPos - 1, boardLength)];
+		}
+		if(nextMove === 'right'){
+				return board[properIndex(xPos + 1, boardLength)][yPos];
+		}
+		if(nextMove === 'down'){
+				return board[xPos][properIndex(yPos + 1, boardLength)];				
+		}
+	}
+
+	function isAdjacentCellTower(cell){
+		var boardLength = board.length
+		if(cell.left.type === GOLD){
+			towerX = properIndex(xPos - 1, boardLength);
+			towerY = yPos;
+			foundTower = true;
+			return true;
+		}
+		if(cell.up.type === GOLD){
+			towerX = xPos;
+			towerY = properIndex(yPos - 1, boardLength);
+			foundTower = true;
+			return true;
+		}
+		if(cell.right.type === GOLD){
+			towerX = properIndex(xPos + 1, boardLength);
+			towerY = yPos;
+			foundTower = true;
+			return true;
+		}
+		if(cell.down.type === GOLD){
+			towerX = xPos;
+			towerY = properIndex(yPos + 1, boardLength);
+			foundTower = true;
+			return true;
+		}
+		return false;
+	}
+
+
 
 	function determineWhichCellToAddTo(stairs){
 		var levels = [];
-		console.log('levels are:', levels);
-		console.log('calculating which stair to go to...')
 		for(var key in stairs){
 			levels.push(stairs[key].level);
 		}
@@ -361,22 +377,35 @@ function Stacker(){
 				}
 			}
 		}
-
+		// else return the 7th cell
 		return levels.length
-		// else 
-			// determine which cell is less than the others and add to that one
-
-			//determine the one to add to next
 	}
 
 
+	function moveToBottomOfTower(cell) {	
+		if(cell.left.type === GOLD){
+			rePosition.push('up');
+			rePosition.push('left');
+		}
+		if(cell.up.type === GOLD){
+			atBottomOfTower = true;
+		}
+		if(cell.right.type === GOLD){
+			rePosition.push('down');
+			rePosition.push('right');
+		}
+		if(cell.down.type === GOLD){
+			rePosition.push('left');
+			rePosition.push('down');
+		}
+	}
 
-	function descendStairsFrom(stair){
+
+	function descendStairsFrom(stair) {
 		var boardLength = board.length;
 		// board[xPos][yPos] = cell;
 		// bottom
 		if(xPos === towerX && yPos === properIndex(towerY + 1, boardLength)){
-			console.log('is this what is causing me to drop again?')
 			return 'drop';
 		}
 		// bottom-left
@@ -403,57 +432,21 @@ function Stacker(){
 		if(xPos === properIndex(towerX + 1, boardLength) && yPos === towerY){
 			return moveHere('up');
 		}
-		
-		console.log('+++++ RECORD CELL: board', board);
 	}
-
-	function moveToBottomOfTower(cell) {
-		console.log('moving to bottom')
-		if(cell.left.type === GOLD){
-			rePosition.push('up');
-			rePosition.push('left');
-		}
-		if(cell.up.type === GOLD){
-			atBottomOfTower = true;
-		}
-		if(cell.right.type === GOLD){
-			rePosition.push('down');
-			rePosition.push('right');
-		}
-		if(cell.down.type === GOLD){
-			rePosition.push('left');
-			rePosition.push('down');
-		}
-		console.log('rePosition', rePosition);
-		// console.log('found tower!');
-	}
-
-
-
-
-
 
 	var climbStairsDirections = [];
 	var calledOnce = 0;
 	function getStairStatus(cell){
-		console.log('climbingStairs');
-		console.log('climbStairsDirections', climbStairsDirections);
 		if(climbStairsDirections.length){
-			// if(counter === 0){
-			// 	board(xPos)
-			// }
 			var nextMove = moveHere(climbStairsDirections.shift());
 			return nextMove;
 		}
-
 		if(calledOnce > 0){
-			console.log('REASSIGNING STAIRSTATUS', stairs);
 			atBottomOfTower = false;
 			towerJustDiscovered = false;
 			stairStatusCompleted = true;
 			return 'drop';
 		}
-
 		if(cell.up.type === GOLD){
 			climbStairsDirections.push('left');
 			climbStairsDirections.push('up');
@@ -464,102 +457,11 @@ function Stacker(){
 			calledOnce++;
 			return 'drop';
 		}
-
-		// climbStairsDirections.push('up');
-		// climbStairsDirections.push('left');
-		// climbStairsDirections.push('left');
-		// climbStairsDirections.push('down');
-		// climbStairsDirections.push('down');
-		// climbStairsDirections.push('right');
-		// return 'drop';
 	}
 
-
-
-
-
-
-
-
-
-/************************* HELPERS ****************************************/ 
-	function moveHere(nextMove){
-		var boardLength = board.length
-		if(nextMove === 'left'){
-			xPos = properIndex(xPos - 1, boardLength);
-			return 'left'
-		}
-		if(nextMove === 'up'){
-			yPos = properIndex(yPos - 1, boardLength)
-			return 'up'
-		}
-		if(nextMove === 'right'){
-			xPos = properIndex(xPos + 1, boardLength);
-			return 'right';
-		}
-		if(nextMove === 'down'){
-			yPos =  properIndex(yPos + 1, boardLength);
-			return 'down';
-		}
-		console.log('ERROR: unexpected input:' + nextMove);
-	}
-
-	function isAdjacentCellVisited(nextMove) {
-		console.log('checking adjacent')
-		console.log('nextMove', nextMove)
-		var boardLength = board.length
-		if(nextMove === 'left'){
-				return board[properIndex(xPos - 1, boardLength)][yPos];
-		}
-		if(nextMove === 'up'){
-				return board[xPos][properIndex(yPos - 1, boardLength)];
-		}
-		if(nextMove === 'right'){
-				return board[properIndex(xPos + 1, boardLength)][yPos];
-		}
-		if(nextMove === 'down'){
-				return board[xPos][properIndex(yPos + 1, boardLength)];				
-		}
-	}
-
-	function isAdjacentCellTower(cell){
-		var boardLength = board.length
-		if(cell.left.type === GOLD){
-			console.log('found tower...')
-			towerX = properIndex(xPos - 1, boardLength);
-			towerY = yPos;
-			foundTower = true;
-			return true;
-		}
-		if(cell.up.type === GOLD){
-			console.log('found tower...')
-			towerX = xPos;
-			towerY = properIndex(yPos - 1, boardLength);
-			foundTower = true;
-			return true;
-		}
-		if(cell.right.type === GOLD){
-			console.log('found tower...')
-			towerX = properIndex(xPos + 1, boardLength);
-			towerY = yPos;
-			foundTower = true;
-			return true;
-		}
-		if(cell.down.type === GOLD){
-			console.log('found tower...')
-			towerX = xPos;
-			towerY = properIndex(yPos + 1, boardLength);
-			foundTower = true;
-			return true;
-		}
-		return false;
-	}
-
-	
-
+	// record cells around the tower to prevent troll from visiting them again during block search
 	function recordCell(cell){
 		var boardLength = board.length;
-		// board[xPos][yPos] = cell;
 		// bottom
 		if(xPos === towerX && yPos === properIndex(towerY + 1, boardLength)){
 			stairs['1'] = cell;
@@ -596,20 +498,14 @@ function Stacker(){
 			board[xPos][yPos] = cell;
 			board[xPos][yPos].stairCaseCell = true;
 		}
+		// right
 		if(xPos === properIndex(towerX + 1, boardLength) && yPos === towerY){
 			stairs['7'] = cell;
 			board[xPos][yPos] = cell;
 			board[xPos][yPos].stairCaseCell = true;
 			towerJustDiscovered = false;
-			console.log('stairs are', stairs);
-			// currentState = state.findBlock;
 		}
-		
-		console.log('+++++ RECORD CELL: board', board);
 	}
-
-
-
 
 
 	function buildBoard(size) {
@@ -631,53 +527,8 @@ function Stacker(){
 			grid[towerX][properIndex(towerY - 1, gridLength)] = stairs['5'] || true; // 5 up
 			grid[properIndex(towerX + 1, gridLength)][properIndex(towerY - 1, gridLength)] = stairs['6'] || true; // 6 up-right
 			grid[properIndex(towerX + 1, gridLength)][towerY] = stairs['7'] || true; // right 7;
-
-			// set stair properties so that I won't run into them during isAdjacentCellBlock
-
-
-
 		}
 		return grid;
-	}
-
-
-	function orderMappedCells(map){
-		var order = 1;
-		var orderedMap = new Array();
-		var mapLength = map.length;
-		for(var i = 0; i < mapLength; i++){
-			orderedMap.push([]);
-			for(var j = 0; j < map[i].length; j++){
-				if(map[i][j] === false){
-					var newCell = { order: order }
-					orderedMap[i][j] = newCell;
-				} else {
-					map[i][j].order = order;
-					orderedMap[i][j] = map[i][j];
-				}
-					order++;
-			}
-		}
-		console.log('orderedMap = ', orderedMap);
-		return orderedMap;
-	}
-
-	function foundBlockCoordinates(map){
-		// should output an object with distanceToNearestBlock
-		var blockCoords = [];
-		var x = 0;
-		var y = 0;
-
-		for(var i = 0; i < map.length; i++){
-			for(var j = 0; j < map[i].length; j++){
-				if(map[i][j].type === BLOCK){
-					x = j;
-					y = i;
-					blockCoords.push({x: x, y: y });					
-				}
-			}
-		}
-		return blockCoords;
 	}
 
 	function isAtBottomOfTower(cell){
@@ -687,20 +538,11 @@ function Stacker(){
 		return false;
 	}
 
-  //  to account for negative indexes, we perofrm this action to translate the current index
+  //  to account for negative indexes, we perofrm this action to translate the index to a positive integer
 	function properIndex(idx, boardLength){
 		return (idx + boardLength) % boardLength;
 	}
 
-
 };
 
 
-
-	// valid moves:
-	// pickup
-	// drop
-	// up
-	// down
-	// left
-	// right
