@@ -69,7 +69,7 @@ function Stacker(){
 				console.log('found the tower...')
 				if(!atBottomOfTower && currentState === state.towerSearch){
 					moveToBottomOfTower(cell);
-					// console.log(rePosition)
+					console.log('is this messing me up?')
 					return moveHere(rePosition.shift()) || 'drop';
 				}
 				if(atBottomOfTower){
@@ -144,6 +144,23 @@ function Stacker(){
 				var stepBackToTower = moveHistory.pop();
 				return stepBackToTower;
 			}
+			if(isAdjacentCellBlock(cell) !== false && 
+				 hasBlock === false && 
+				 !isAdjacentCellVisited(cell) && 
+				 typeof board[properIndex(xPos - 1, board.length)][yPos] === "boolean" &&
+			   typeof board[properIndex(xPos + 1, board.length)][yPos] === "boolean" && 
+			   typeof board[xPos][properIndex(yPos + 1, board.length)] === "boolean" &&
+			   typeof board[xPos][properIndex(yPos - 1, board.length)] === "boolean"){
+						var moveToBlock = isAdjacentCellBlock(cell);
+						moveHistory.push(opposite[moveToBlock]);
+						console.log('moveToBlockis', moveToBlock);
+						console.log('cell.left', cell.left)
+						console.log('cell.right', cell.right)
+						console.log('cell.up', cell.up)
+						console.log('cell.down', cell.down)
+
+						return moveHere(moveToBlock);
+			}
 
 		}
 		
@@ -182,7 +199,7 @@ function Stacker(){
 		var previousMove = moveHistory.pop();
 		var randomMove = move[Math.random() * move.length >> 0]
 
-		return moveHere(previousMove) || moveHere(randomMove);
+		return moveHere(previousMove);
 	}
 
 	function isCurrentCellBlock(cell){
@@ -192,10 +209,31 @@ function Stacker(){
 		return false;
 	}
 
-	var directionsToBuildStairs = [];
+	function isAdjacentCellBlock(cell){
+		if(cell.left.type === BLOCK){
+			return 'left';
+		}
+		if(cell.up.type === BLOCK){
+			return 'up'
+		}
+		if(cell.right.type === BLOCK){
+			return 'right'
+		}
+		if(cell.down.type === BLOCK){
+			return 'down'
+		}
+		return false;
+	}
 
+	var directionsToBuildStairs = [];
 	var justPlacedABlock = false;
+	var turn = 1;
 	function buildStairCase(cell){
+		console.log('determineWhichCellToAddTo is now equal to', determineWhichCellToAddTo(stairs));
+		if(stairs['7'].level === 7){
+			currentState === state.GAMEOVER;
+			return moveHere('left');
+		}
 		
 		if(directionsToBuildStairs.length){
 			if(directionsToBuildStairs[0] === 'drop'){
@@ -205,8 +243,8 @@ function Stacker(){
 			return moveHere(directionsToBuildStairs.shift());
 		}
 
-		console.log('building that staircase bro...')
-		if(stairs['7'].level === 0){
+		console.log('building the staircase...')
+		if(determineWhichCellToAddTo(stairs) === 7 && !justPlacedABlock){
 			directionsToBuildStairs.push('left');
 			directionsToBuildStairs.push('up');
 			directionsToBuildStairs.push('up');
@@ -217,7 +255,7 @@ function Stacker(){
 			justPlacedABlock = true;
 			return 'pickup'
 		}
-		if(stairs['6'].level === 0 && !justPlacedABlock){
+		if(determineWhichCellToAddTo(stairs) === 6 && !justPlacedABlock){
 			directionsToBuildStairs.push('left');
 			directionsToBuildStairs.push('up');
 			directionsToBuildStairs.push('up');
@@ -227,7 +265,7 @@ function Stacker(){
 			justPlacedABlock = true;
 			return 'pickup'
 		}
-		if(stairs['5'].level === 0 && !justPlacedABlock){
+		if(determineWhichCellToAddTo(stairs) === 5 && !justPlacedABlock){
 			directionsToBuildStairs.push('left');
 			directionsToBuildStairs.push('up');
 			directionsToBuildStairs.push('up');
@@ -236,7 +274,7 @@ function Stacker(){
 			justPlacedABlock = true;
 			return 'pickup'
 		}
-		if(stairs['4'].level === 0 && !justPlacedABlock){
+		if(determineWhichCellToAddTo(stairs) === 4 && !justPlacedABlock){
 			directionsToBuildStairs.push('left');
 			directionsToBuildStairs.push('up');
 			directionsToBuildStairs.push('up');
@@ -244,20 +282,20 @@ function Stacker(){
 			justPlacedABlock = true;
 			return 'pickup'
 		}
-		if(stairs['3'].level === 0 && !justPlacedABlock){
+		if(determineWhichCellToAddTo(stairs) === 3 && !justPlacedABlock){
 			directionsToBuildStairs.push('left');
 			directionsToBuildStairs.push('up');
 			directionsToBuildStairs.push('drop');
 			justPlacedABlock = true;
 			return 'pickup'
 		}
-		if(stairs['2'].level === 0 && !justPlacedABlock){
+		if(determineWhichCellToAddTo(stairs) === 2 && !justPlacedABlock){
 			directionsToBuildStairs.push('left');
 			directionsToBuildStairs.push('drop');
 			justPlacedABlock = true;
 			return 'pickup'
 		}
-		if(stairs['1'].level === 0 && !justPlacedABlock){
+		if(determineWhichCellToAddTo(stairs) === 1 && !justPlacedABlock){
 			console.log('why am i placing a block here yet?')
 			directionsToBuildStairs.push('drop');
 			justPlacedABlock = true;
@@ -266,18 +304,26 @@ function Stacker(){
 		
 
 		if(!isAtBottomOfTower(cell)) {
-			console.log('cell.up should be the tower...', cell.up);
+			// console.log('cell.up should be the tower...', cell.up);
 			// moveToBottomOfTower(cell);
+			recordCell(cell);
 			// var nextMove = rePosition.shift();
 			return descendStairsFrom(xPos, yPos)
 		}
 		if(isAtBottomOfTower(cell)) {
+			console.log('stair status', stairs)
+			console.log('this might be it...')
+			console.log('bottom stair.level', stairs['1'].level);
 			justPlacedABlock = false;
 			finishedDescendingStairs = true;
 			board = buildBoard(16);
 			hasBlock = false;
-			currentState = state.findBlock;	
-			return 'drop';
+			currentState = state.findBlock;
+			// if(cell.level === 1){
+			// 	return 'up';
+			// }	else {
+				return 'drop';
+			// }
 		}
 		// console.log('directions to bottom of tower are now:', rePosition);
 		// if(rePosition.length === 0){
@@ -287,6 +333,36 @@ function Stacker(){
 		// return moveHere(nextMove);
 	}
 
+	function determineWhichCellToAddTo(stairs){
+		var levels = [];
+		for(var key in stairs){
+			levels.push(stairs[key].level);
+		}
+
+		if(levels[levels.length - 1] === 0){
+			return levels.length;
+		}
+
+		for(var i = levels.length - 1; i >= 0; i--){
+			for(var j = levels.length - 1; j >= 0; j--){
+				// if not all equal
+				if(levels[i] !== levels[j]){
+					// and if the current number is less than its index + 1
+					if(levels[j] < j + 1){
+					// add one to the block that needs it next
+						return j + 1;
+					}
+				}
+			}
+		}
+
+		return levels.length
+		// else 
+			// determine which cell is less than the others and add to that one
+
+			//determine the one to add to next
+	}
+
 
 
 	function descendStairsFrom(stair){
@@ -294,6 +370,7 @@ function Stacker(){
 		// board[xPos][yPos] = cell;
 		// bottom
 		if(xPos === towerX && yPos === properIndex(towerY + 1, boardLength)){
+			console.log('is this what is causing me to drop again?')
 			return 'drop';
 		}
 		// bottom-left
