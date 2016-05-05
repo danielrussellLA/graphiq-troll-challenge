@@ -142,25 +142,23 @@ function Stacker(){
 					return 'pickup';
 				}
 				var stepBackToTower = moveHistory.pop();
-				return stepBackToTower;
+				return moveHere(stepBackToTower);
 			}
+				console.log('its 148')
 			if(isAdjacentCellBlock(cell) !== false && 
-				 hasBlock === false && 
-				 !isAdjacentCellVisited(cell) && 
-				 typeof board[properIndex(xPos - 1, board.length)][yPos] === "boolean" &&
-			   typeof board[properIndex(xPos + 1, board.length)][yPos] === "boolean" && 
-			   typeof board[xPos][properIndex(yPos + 1, board.length)] === "boolean" &&
-			   typeof board[xPos][properIndex(yPos - 1, board.length)] === "boolean"){
+				 hasBlock === false){
 						var moveToBlock = isAdjacentCellBlock(cell);
-						moveHistory.push(opposite[moveToBlock]);
 						console.log('moveToBlockis', moveToBlock);
 						console.log('cell.left', cell.left)
 						console.log('cell.right', cell.right)
 						console.log('cell.up', cell.up)
 						console.log('cell.down', cell.down)
-
-						return moveHere(moveToBlock);
-			}
+						if(!isAdjacentCellVisited(moveToBlock)){
+							moveHistory.push(opposite[moveToBlock]);
+							return moveHere(moveToBlock);
+						}
+			} 
+			
 
 		}
 		
@@ -186,9 +184,13 @@ function Stacker(){
 
 		avoidWalls();
 
+
+	
+
 		// choose next move
 		for(var i = 0; i < move.length; i++){
 			var nextMove = move[i];
+			console.log('its 194')
 			if(!isAdjacentCellVisited(nextMove)){
 				moveHistory.push(opposite[nextMove]);
 				return moveHere(nextMove);
@@ -199,7 +201,7 @@ function Stacker(){
 		var previousMove = moveHistory.pop();
 		var randomMove = move[Math.random() * move.length >> 0]
 
-		return moveHere(previousMove);
+		return moveHere(previousMove) || moveHere(randomMove);
 	}
 
 	function isCurrentCellBlock(cell){
@@ -210,16 +212,16 @@ function Stacker(){
 	}
 
 	function isAdjacentCellBlock(cell){
-		if(cell.left.type === BLOCK){
+		if(cell.left.type === BLOCK && board[properIndex(xPos - 1, board.length)][yPos].stairCaseCell !== true){
 			return 'left';
 		}
-		if(cell.up.type === BLOCK){
+		if(cell.up.type === BLOCK && board[xPos][properIndex(yPos - 1, board.length)].stairCaseCell !== true){
 			return 'up'
 		}
-		if(cell.right.type === BLOCK){
+		if(cell.right.type === BLOCK && board[properIndex(xPos + 1, board.length)][yPos].stairCaseCell !== true){
 			return 'right'
 		}
-		if(cell.down.type === BLOCK){
+		if(cell.down.type === BLOCK && board[xPos][properIndex(yPos + 1, board.length)].stairCaseCell !== true){
 			return 'down'
 		}
 		return false;
@@ -230,7 +232,7 @@ function Stacker(){
 	var turn = 1;
 	function buildStairCase(cell){
 		console.log('determineWhichCellToAddTo is now equal to', determineWhichCellToAddTo(stairs));
-		if(stairs['7'].level === 7){
+		if(stairs['7'].level === 7 && turn > 1){
 			currentState === state.GAMEOVER;
 			return moveHere('left');
 		}
@@ -302,6 +304,7 @@ function Stacker(){
 			return 'pickup'
 		}
 		
+		turn++;
 
 		if(!isAtBottomOfTower(cell)) {
 			// console.log('cell.up should be the tower...', cell.up);
@@ -557,35 +560,42 @@ function Stacker(){
 		if(xPos === towerX && yPos === properIndex(towerY + 1, boardLength)){
 			stairs['1'] = cell;
 			board[xPos][yPos] = cell;
+			board[xPos][yPos].stairCaseCell = true;
 		}
 		// bottom-left
 		if(xPos === properIndex(towerX - 1, boardLength) && yPos === properIndex(towerY + 1, boardLength)){
 			stairs['2'] = cell;
 			board[xPos][yPos] = cell;
+			board[xPos][yPos].stairCaseCell = true;
 		}
 		// left
 		if(xPos === properIndex(towerX - 1, boardLength) && yPos === towerY){
 			stairs['3'] = cell;
 			board[xPos][yPos] = cell;
+			board[xPos][yPos].stairCaseCell = true;
 		}
 		// up-left
 		if(xPos === properIndex(towerX - 1, boardLength) && yPos === properIndex(towerY - 1, boardLength)){
 			stairs['4'] = cell;
 			board[xPos][yPos] = cell;
+			board[xPos][yPos].stairCaseCell = true;
 		}
 		// up
 		if(xPos === towerX && yPos === properIndex(towerY - 1, boardLength)){
 			stairs['5'] = cell;
 			board[xPos][yPos] = cell;
+			board[xPos][yPos].stairCaseCell = true;
 		}
 		// up-right
 		if(xPos === properIndex(towerX + 1, boardLength) && yPos === properIndex(towerY - 1, boardLength)){
 			stairs['6'] = cell;
 			board[xPos][yPos] = cell;
+			board[xPos][yPos].stairCaseCell = true;
 		}
 		if(xPos === properIndex(towerX + 1, boardLength) && yPos === towerY){
 			stairs['7'] = cell;
 			board[xPos][yPos] = cell;
+			board[xPos][yPos].stairCaseCell = true;
 			towerJustDiscovered = false;
 			console.log('stairs are', stairs);
 			// currentState = state.findBlock;
@@ -617,6 +627,11 @@ function Stacker(){
 			grid[towerX][properIndex(towerY - 1, gridLength)] = stairs['5'] || true; // 5 up
 			grid[properIndex(towerX + 1, gridLength)][properIndex(towerY - 1, gridLength)] = stairs['6'] || true; // 6 up-right
 			grid[properIndex(towerX + 1, gridLength)][towerY] = stairs['7'] || true; // right 7;
+
+			// set stair properties so that I won't run into them during isAdjacentCellBlock
+
+
+
 		}
 		return grid;
 	}
