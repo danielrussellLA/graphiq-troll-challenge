@@ -32,10 +32,19 @@ function Stacker(){
 	// board and tower stats
 	var towerX = -1;
 	var towerY = -1;
-	var stairs = [0,0,0,0,0,0,0];
+	var stairs = {
+		'1': null,
+		'2': null,
+		'3': null,
+		'4': null,
+		'5': null,
+		'6': null,
+		'7': null
+	}
 	var foundTower = false;
 	var atBottomOfTower = false;
 	var towerJustDiscovered = true;
+	var stairStatusCompleted = false;
 	var rePosition = [];
 	var board = new Array();
 	
@@ -49,7 +58,6 @@ function Stacker(){
 	this.turn = function(cell){
 		// record current cell and its surrounding cells on mappedCells. 
 		// this will be important during block finding stage
-		recordCell(cell);
 
 		if(currentState === state.towerSearch){
 			if(firstMove){
@@ -66,8 +74,10 @@ function Stacker(){
 					return moveHere(rePosition.shift()) || 'drop';
 				}
 				if(atBottomOfTower){
-					currentState = state.findBlock;
+					// clear board again so troll will re-start his smartSearch and not to search for blocks around the tower					
+					board = buildBoard(16);
 					moveHistory.length = 0;
+					currentState = state.findBlock;
 					console.log('atBottomOfTower');
 				}
 				
@@ -81,11 +91,16 @@ function Stacker(){
 			console.log('lets find a block...')
 			console.log('block count : ', blockCount);
 			if(towerJustDiscovered){
-				towerJustDiscovered = false;
+				// towerJustDiscovered = false;
+		    recordCell(cell);
+		    return getStairStatus(cell);
 				// give every cell a number in mappedCells to help with A* search calculations
-				orderMappedCells(mappedCells);
-				// clear board to make it easier to search for blocks and so troll will not to search for blocks around the tower.
-				board = buildBoard(16);
+				// orderMappedCells(mappedCells);
+			}
+			if(stairStatusCompleted && !atBottomOfTower){
+				console.log('trying togo baco to bottom of tower')
+				 moveToBottomOfTower(cell);
+				 return moveHere(rePosition.shift()) || 'drop';
 			}
 
 			return smartSearch(cell);
@@ -182,8 +197,8 @@ function Stacker(){
 	}
 
 	var climbStairsDirections = [];
-	var counter = 0;
-	function climbStairs(cell){
+	var calledOnce = 0;
+	function getStairStatus(cell){
 		console.log('climbingStairs');
 		console.log('climbStairsDirections', climbStairsDirections);
 		if(climbStairsDirections.length){
@@ -191,9 +206,17 @@ function Stacker(){
 			// 	board(xPos)
 			// }
 			var nextMove = moveHere(climbStairsDirections.shift());
-
 			return nextMove;
 		}
+
+		if(calledOnce > 0){
+			console.log('reassigning stairStatusCompleted');
+			atBottomOfTower = false;
+			towerJustDiscovered = false;
+			stairStatusCompleted = true;
+			return 'drop';
+		}
+
 		if(cell.up.type === GOLD){
 			climbStairsDirections.push('left');
 			climbStairsDirections.push('up');
@@ -201,87 +224,18 @@ function Stacker(){
 			climbStairsDirections.push('right');
 			climbStairsDirections.push('right');
 			climbStairsDirections.push('down');
+			calledOnce++;
 			return 'pickup';
 		}
 
-		climbStairsDirections.push('up');
-		climbStairsDirections.push('left');
-		climbStairsDirections.push('left');
-		climbStairsDirections.push('down');
-		climbStairsDirections.push('down');
-		climbStairsDirections.push('right');
-		return 'drop';
+		// climbStairsDirections.push('up');
+		// climbStairsDirections.push('left');
+		// climbStairsDirections.push('left');
+		// climbStairsDirections.push('down');
+		// climbStairsDirections.push('down');
+		// climbStairsDirections.push('right');
+		// return 'drop';
 	}
-
-	// function searchForBlock(map) {
-	// 	// perform A* search if there are cells on mappedCells
-	// 	var mapLength = map.length;
-	// 	var h = 0;
-	// 	var g = 1;
-	// 	var f = g + h;
-
-	// 	var openList = [];
-	// 	var closedList = [];
-
-	// 	var directionsToNearestBlock = [];
-	// 	console.log(xPos + ' ' + yPos)
-	// 	function findNearestBlock(map, xPos, yPos, directions) {
-	// 		console.log('in recursion!')
-	// 		console.log('directions so far!', directions);
-	// 		console.log('directionsToNearestBlock so far!', directionsToNearestBlock);
-
-	// 		console.log('map', map)
-	// 		if(map[xPos] && map[xPos][yPos].type === BLOCK && 
-	// 			 board[xPos][yPos] === false){
-	// 			if(directionsToNearestBlock.length === 0 || directions.length < directionsToNearestBlock.length){
-	// 				directions.push('pickup');
-	// 				directionsToNearestBlock = directions;
-	// 				console.log('found a nearby block. directions are: ', directions);
-	// 				return;
-	// 			}
-	// 		}
-
-	// 		if(directionsToNearestBlock.length){
-	// 			return;
-	// 		}
-	// 		// right
-	// 		if(map[properIndex(xPos + 1, mapLength)] && map[properIndex(xPos + 1, mapLength)][yPos].type !== WALL && map[properIndex(xPos + 1, mapLength)][yPos].level <= map[xPos][yPos].level){
-	// 			directions.push('right');
-	// 			findNearestBlock(map, xPos + 1, yPos, directions);
-	// 		}
-	// 		// up
-	// 		if(map[xPos][properIndex(yPos - 1, mapLength)] && map[xPos][properIndex(yPos - 1, mapLength)].type !== WALL && map[xPos][properIndex(yPos - 1, mapLength)].level <= map[xPos][yPos].level){
-	// 			directions.push('up');
-	// 			findNearestBlock(map, xPos, yPos - 1, directions);
-	// 		}
-	// 		// left
-	// 	  if(map[properIndex(xPos - 1, mapLength)][yPos] && map[properIndex(xPos - 1, mapLength)][yPos].type !== WALL && map[properIndex(xPos - 1, mapLength)][yPos].level <= map[xPos][yPos].level){
-	// 			directions.push('left');
-	// 			findNearestBlock(map, xPos - 1, yPos, directions);
-	// 		}
-	// 	  // down
-	// 		if(map[xPos][properIndex(yPos + 1, mapLength)] && map[xPos][properIndex(yPos + 1, mapLength)].type !== WALL && map[xPos][properIndex(yPos + 1, mapLength)].level <= map[xPos][yPos].level){
-	// 			directions.push('down');
-	// 			findNearestBlock(map, xPos, yPos + 1, directions);
-	// 		}
-	// 		// push surrounding cells into open List
-	// 		// openList.push(mappedCells[xPos][properIndex(yPos - 1), mapLength]);
-	// 	}
-	// 	console.log('DIRECTIONS TO NEAREST BLOCK!', directionsToNearestBlock);
-	// 	findNearestBlock(map, xPos, yPos, []);
-	// 	// perform DPS if there are no more cells in sight on mappedCells
-	// 	return directionsToNearestBlock;
-	// }
-
-	// function manHattanHeuristic(pos0, pos1){
- //      var d1 = Math.abs(pos1.x - pos0.x);
- //      var d2 = Math.abs(pos1.y - pos0.y);
- //      return d1 + d2;
-	// }
-
-
-
-
 
 
 /************************* HELPERS ****************************************/ 
@@ -379,44 +333,88 @@ function Stacker(){
 	}
 
 	function recordCell(cell){
-		var mapLength = mappedCells.length;
-		// current
-		if(!mappedCells[xPos][yPos]){
-			mappedCells[xPos][yPos] = cell;
-			if(mappedCells[xPos][yPos].type === BLOCK){
-				blockCount++;
-			}
+		var boardLength = board.length;
+		// board[xPos][yPos] = cell;
+		// bottom
+		if(xPos === towerX && yPos === properIndex(towerY + 1, boardLength)){
+			stairs['1'] = cell;
+			board[xPos][yPos] = cell;
+		}
+		// bottom-left
+		if(xPos === properIndex(towerX - 1, boardLength) && yPos === properIndex(towerY + 1, boardLength)){
+			stairs['2'] = cell;
+			board[xPos][yPos] = cell;
 		}
 		// left
-		if(!mappedCells[properIndex(xPos - 1, mapLength)][yPos]){
-			mappedCells[properIndex(xPos - 1, mapLength)][yPos] = cell.left;
-			if(mappedCells[properIndex(xPos - 1, mapLength)][yPos].type === BLOCK){
-				blockCount++;
-			}
+		if(xPos === properIndex(towerX - 1, boardLength) && yPos === towerY){
+			stairs['3'] = cell;
+			board[xPos][yPos] = cell;
+		}
+		// up-left
+		if(xPos === properIndex(towerX - 1, boardLength) && yPos === properIndex(towerY - 1, boardLength)){
+			stairs['4'] = cell;
+			board[xPos][yPos] = cell;
 		}
 		// up
-		if(!mappedCells[xPos][properIndex(yPos - 1), mapLength]){
-			mappedCells[xPos][properIndex(yPos - 1), mapLength] = cell.up;
-			if(mappedCells[xPos][properIndex(yPos - 1), mapLength].type === BLOCK){
-				blockCount++;
-			}
+		if(xPos === towerX && yPos === properIndex(towerY - 1, boardLength)){
+			stairs['5'] = cell;
+			board[xPos][yPos] = cell;
 		}
-		// right
-		if(!mappedCells[properIndex(xPos + 1, mapLength)][yPos]){
-			mappedCells[properIndex(xPos + 1, mapLength)][yPos] = cell.right;
-			if(mappedCells[properIndex(xPos + 1, mapLength)][yPos].type === BLOCK){
-				blockCount++;
-			}
+		// up-right
+		if(xPos === properIndex(towerX + 1, boardLength) && yPos === properIndex(towerY - 1, boardLength)){
+			stairs['6'] = cell;
+			board[xPos][yPos] = cell;
 		}
-		// down
-		if(!mappedCells[xPos][properIndex(yPos + 1), mapLength]){
-			mappedCells[xPos][properIndex(yPos + 1), mapLength] = cell.down;
-			if(mappedCells[xPos][properIndex(yPos + 1), mapLength].type === BLOCK){
-				blockCount++;
-			}
+		if(xPos === properIndex(towerX + 1, boardLength) && yPos === towerY){
+			stairs['7'] = cell;
+			board[xPos][yPos] = cell;
+			towerJustDiscovered = false;
+			// currentState = state.findBlock;
 		}
-
-		console.log('mappedCells', mappedCells)
+		// board[towerX][towerY] = true; // tower
+		// board[towerX][properIndex(towerY + 1, boardLength)] = true; // 1 down
+		// board[properIndex(towerX - 1, boardLength)][properIndex(towerY + 1, boardLength)] = true; // 2 down-left
+		// board[properIndex(towerX - 1, boardLength)][towerY] = true; // 3 left
+		// board[properIndex(towerX - 1, boardLength)][properIndex(towerY - 1, boardLength)] = true; // 4 up-left
+		// board[towerX][properIndex(towerY - 1, boardLength)] = true; // 5 up
+		// board[properIndex(towerX + 1, boardLength)][properIndex(towerY - 1, boardLength)] = true; // 6 up-right
+		// board[properIndex(towerX + 1, boardLength)][towerY] = true; // right 7;
+		// current
+		// if(!board[xPos][yPos]){
+		// 	board[xPos][yPos] = cell;
+		// 	if(board[xPos][yPos].type === BLOCK){
+		// 		blockCount++;
+		// 	}
+		// }
+		// // left
+		// if(!board[properIndex(xPos - 1, boardLength)][yPos]){
+		// 	board[properIndex(xPos - 1, boardLength)][yPos] = cell.left;
+		// 	if(board[properIndex(xPos - 1, boardLength)][yPos].type === BLOCK){
+		// 		blockCount++;
+		// 	}
+		// }
+		// // up
+		// if(!board[xPos][properIndex(yPos - 1), boardLength]){
+		// 	board[xPos][properIndex(yPos - 1), boardLength] = cell.up;
+		// 	if(board[xPos][properIndex(yPos - 1), boardLength].type === BLOCK){
+		// 		blockCount++;
+		// 	}
+		// }
+		// // right
+		// if(!board[properIndex(xPos + 1, boardLength)][yPos]){
+		// 	board[properIndex(xPos + 1, boardLength)][yPos] = cell.right;
+		// 	if(board[properIndex(xPos + 1, boardLength)][yPos].type === BLOCK){
+		// 		blockCount++;
+		// 	}
+		// }
+		// // down
+		// if(!board[xPos][properIndex(yPos + 1), boardLength]){
+		// 	board[xPos][properIndex(yPos + 1), boardLength] = cell.down;
+		// 	if(board[xPos][properIndex(yPos + 1), boardLength].type === BLOCK){
+		// 		blockCount++;
+		// 	}
+		// }
+		console.log('+++++ RECORD CELL: board', board);
 	}
 
 	function buildBoard(size) {
