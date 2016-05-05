@@ -53,7 +53,6 @@ function Stacker(){
 
 	var blockCount = 0;
 
-
 /************************* APP ****************************************/ 
 	this.turn = function(cell){
 		// record current cell and its surrounding cells on mappedCells. 
@@ -98,18 +97,17 @@ function Stacker(){
 				// orderMappedCells(mappedCells);
 			}
 			if(stairStatusCompleted && !atBottomOfTower){
-				console.log('trying togo baco to bottom of tower')
+				 console.log('trying to go back to bottom of tower')
 				 moveToBottomOfTower(cell);
 				 return moveHere(rePosition.shift()) || 'drop';
 			}
-
+			console.log('initiating smart search again!')
 			return smartSearch(cell);
 		}
 		
 		if(currentState === state.buildStairCase){
 			console.log('state.buildStairCase');
-			console.log('THIS IS MY BOARD:', board);
-			console.log('THIS IS MY MAPPEDCELLS', mappedCells);
+			recordCell(cell);
 			return buildStairCase(cell);
 		}
 		if(currentState === state.GAMEOVER){
@@ -132,22 +130,25 @@ function Stacker(){
 		if(currentState === state.findBlock){
 			if(isCurrentCellBlock(cell) && hasBlock === false && !isAdjacentCellTower(cell)){
 				hasBlock = true;
+				finishedDescendingStairs = false;
 				return 'pickup';
 			}
 			if(hasBlock){
 				if(isAdjacentCellTower(cell)){
+					// console.log('yeah we in here..')
 					currentState = state.buildStairCase;
+
 					// you have a block so pickup will do nothing. we just want to be able to fire buildStaircase.
 					return 'pickup';
 				}
 				var stepBackToTower = moveHistory.pop();
 				return stepBackToTower;
 			}
+
 		}
 		
-
 		// set walls as visited so we don't run into them a bunch of times.
-		function checkWalls(){
+		function avoidWalls(){
 			if(board[xPos][yPos] === false){
 				var boardLength = board.length;
 				board[xPos][yPos] = true;
@@ -166,7 +167,7 @@ function Stacker(){
 			}
 		}
 
-		checkWalls();
+		avoidWalls();
 
 		// choose next move
 		for(var i = 0; i < move.length; i++){
@@ -191,10 +192,143 @@ function Stacker(){
 		return false;
 	}
 
+	var directionsToBuildStairs = [];
+
+	var justPlacedABlock = false;
 	function buildStairCase(cell){
-		return climbStairs(cell);
+		
+		if(directionsToBuildStairs.length){
+			if(directionsToBuildStairs[0] === 'drop'){
+				console.log('directionsToBuildStairs is now:', directionsToBuildStairs);
+				return directionsToBuildStairs.shift();;
+			}
+			return moveHere(directionsToBuildStairs.shift());
+		}
+
 		console.log('building that staircase bro...')
+		if(stairs['7'].level === 0){
+			directionsToBuildStairs.push('left');
+			directionsToBuildStairs.push('up');
+			directionsToBuildStairs.push('up');
+			directionsToBuildStairs.push('right');
+			directionsToBuildStairs.push('right');
+			directionsToBuildStairs.push('down');
+			directionsToBuildStairs.push('drop');
+			justPlacedABlock = true;
+			return 'pickup'
+		}
+		if(stairs['6'].level === 0 && !justPlacedABlock){
+			directionsToBuildStairs.push('left');
+			directionsToBuildStairs.push('up');
+			directionsToBuildStairs.push('up');
+			directionsToBuildStairs.push('right');
+			directionsToBuildStairs.push('right');
+			directionsToBuildStairs.push('drop');
+			justPlacedABlock = true;
+			return 'pickup'
+		}
+		if(stairs['5'].level === 0 && !justPlacedABlock){
+			directionsToBuildStairs.push('left');
+			directionsToBuildStairs.push('up');
+			directionsToBuildStairs.push('up');
+			directionsToBuildStairs.push('right');
+			directionsToBuildStairs.push('drop');
+			justPlacedABlock = true;
+			return 'pickup'
+		}
+		if(stairs['4'].level === 0 && !justPlacedABlock){
+			directionsToBuildStairs.push('left');
+			directionsToBuildStairs.push('up');
+			directionsToBuildStairs.push('up');
+			directionsToBuildStairs.push('drop');
+			justPlacedABlock = true;
+			return 'pickup'
+		}
+		if(stairs['3'].level === 0 && !justPlacedABlock){
+			directionsToBuildStairs.push('left');
+			directionsToBuildStairs.push('up');
+			directionsToBuildStairs.push('drop');
+			justPlacedABlock = true;
+			return 'pickup'
+		}
+		if(stairs['2'].level === 0 && !justPlacedABlock){
+			directionsToBuildStairs.push('left');
+			directionsToBuildStairs.push('drop');
+			justPlacedABlock = true;
+			return 'pickup'
+		}
+		if(stairs['1'].level === 0 && !justPlacedABlock){
+			console.log('why am i placing a block here yet?')
+			directionsToBuildStairs.push('drop');
+			justPlacedABlock = true;
+			return 'pickup'
+		}
+		
+
+		if(!isAtBottomOfTower(cell)) {
+			console.log('cell.up should be the tower...', cell.up);
+			// moveToBottomOfTower(cell);
+			// var nextMove = rePosition.shift();
+			return descendStairsFrom(xPos, yPos)
+		}
+		if(isAtBottomOfTower(cell)) {
+			justPlacedABlock = false;
+			finishedDescendingStairs = true;
+			board = buildBoard(16);
+			hasBlock = false;
+			currentState = state.findBlock;	
+			return 'drop';
+		}
+		// console.log('directions to bottom of tower are now:', rePosition);
+		// if(rePosition.length === 0){
+		// 	console.log('yo rePosition.length is wack!')
+		// 	currentState = state.findBlock;
+		// }
+		// return moveHere(nextMove);
 	}
+
+
+
+	function descendStairsFrom(stair){
+		var boardLength = board.length;
+		// board[xPos][yPos] = cell;
+		// bottom
+		if(xPos === towerX && yPos === properIndex(towerY + 1, boardLength)){
+			return 'drop';
+		}
+		// bottom-left
+		if(xPos === properIndex(towerX - 1, boardLength) && yPos === properIndex(towerY + 1, boardLength)){
+			return moveHere('right');
+		}
+		// left
+		if(xPos === properIndex(towerX - 1, boardLength) && yPos === towerY){
+			return moveHere('down');
+		}
+		// up-left
+		if(xPos === properIndex(towerX - 1, boardLength) && yPos === properIndex(towerY - 1, boardLength)){
+			return moveHere('down');
+		}
+		// up
+		if(xPos === towerX && yPos === properIndex(towerY - 1, boardLength)){
+			return moveHere('left');
+		}
+		// up-right
+		if(xPos === properIndex(towerX + 1, boardLength) && yPos === properIndex(towerY - 1, boardLength)){
+			return moveHere('left');
+		}
+		// right
+		if(xPos === properIndex(towerX + 1, boardLength) && yPos === towerY){
+			return moveHere('up');
+		}
+		
+		console.log('+++++ RECORD CELL: board', board);
+	}
+
+
+
+
+
+
 
 	var climbStairsDirections = [];
 	var calledOnce = 0;
@@ -236,6 +370,13 @@ function Stacker(){
 		// climbStairsDirections.push('right');
 		// return 'drop';
 	}
+
+
+
+
+
+
+
 
 
 /************************* HELPERS ****************************************/ 
@@ -369,53 +510,16 @@ function Stacker(){
 			stairs['7'] = cell;
 			board[xPos][yPos] = cell;
 			towerJustDiscovered = false;
+			console.log('stairs are', stairs);
 			// currentState = state.findBlock;
 		}
-		// board[towerX][towerY] = true; // tower
-		// board[towerX][properIndex(towerY + 1, boardLength)] = true; // 1 down
-		// board[properIndex(towerX - 1, boardLength)][properIndex(towerY + 1, boardLength)] = true; // 2 down-left
-		// board[properIndex(towerX - 1, boardLength)][towerY] = true; // 3 left
-		// board[properIndex(towerX - 1, boardLength)][properIndex(towerY - 1, boardLength)] = true; // 4 up-left
-		// board[towerX][properIndex(towerY - 1, boardLength)] = true; // 5 up
-		// board[properIndex(towerX + 1, boardLength)][properIndex(towerY - 1, boardLength)] = true; // 6 up-right
-		// board[properIndex(towerX + 1, boardLength)][towerY] = true; // right 7;
-		// current
-		// if(!board[xPos][yPos]){
-		// 	board[xPos][yPos] = cell;
-		// 	if(board[xPos][yPos].type === BLOCK){
-		// 		blockCount++;
-		// 	}
-		// }
-		// // left
-		// if(!board[properIndex(xPos - 1, boardLength)][yPos]){
-		// 	board[properIndex(xPos - 1, boardLength)][yPos] = cell.left;
-		// 	if(board[properIndex(xPos - 1, boardLength)][yPos].type === BLOCK){
-		// 		blockCount++;
-		// 	}
-		// }
-		// // up
-		// if(!board[xPos][properIndex(yPos - 1), boardLength]){
-		// 	board[xPos][properIndex(yPos - 1), boardLength] = cell.up;
-		// 	if(board[xPos][properIndex(yPos - 1), boardLength].type === BLOCK){
-		// 		blockCount++;
-		// 	}
-		// }
-		// // right
-		// if(!board[properIndex(xPos + 1, boardLength)][yPos]){
-		// 	board[properIndex(xPos + 1, boardLength)][yPos] = cell.right;
-		// 	if(board[properIndex(xPos + 1, boardLength)][yPos].type === BLOCK){
-		// 		blockCount++;
-		// 	}
-		// }
-		// // down
-		// if(!board[xPos][properIndex(yPos + 1), boardLength]){
-		// 	board[xPos][properIndex(yPos + 1), boardLength] = cell.down;
-		// 	if(board[xPos][properIndex(yPos + 1), boardLength].type === BLOCK){
-		// 		blockCount++;
-		// 	}
-		// }
+		
 		console.log('+++++ RECORD CELL: board', board);
 	}
+
+
+
+
 
 	function buildBoard(size) {
 		var grid = new Array(size);
@@ -429,13 +533,13 @@ function Stacker(){
 		if(foundTower) {
 			var gridLength = grid.length;
 			grid[towerX][towerY] = true; // tower
-			grid[towerX][properIndex(towerY + 1, gridLength)] = true; // 1 down
-			grid[properIndex(towerX - 1, gridLength)][properIndex(towerY + 1, gridLength)] = true; // 2 down-left
-			grid[properIndex(towerX - 1, gridLength)][towerY] = true; // 3 left
-			grid[properIndex(towerX - 1, gridLength)][properIndex(towerY - 1, gridLength)] = true; // 4 up-left
-			grid[towerX][properIndex(towerY - 1, gridLength)] = true; // 5 up
-			grid[properIndex(towerX + 1, gridLength)][properIndex(towerY - 1, gridLength)] = true; // 6 left-down
-			grid[properIndex(towerX + 1, gridLength)][towerY] = true; // right 7;
+			grid[towerX][properIndex(towerY + 1, gridLength)] = stairs['1'] || true; // 1 down
+			grid[properIndex(towerX - 1, gridLength)][properIndex(towerY + 1, gridLength)] = stairs['2'] || true; // 2 down-left
+			grid[properIndex(towerX - 1, gridLength)][towerY] = stairs['3'] || true; // 3 left
+			grid[properIndex(towerX - 1, gridLength)][properIndex(towerY - 1, gridLength)] = stairs['4'] || true; // 4 up-left
+			grid[towerX][properIndex(towerY - 1, gridLength)] = stairs['5'] || true; // 5 up
+			grid[properIndex(towerX + 1, gridLength)][properIndex(towerY - 1, gridLength)] = stairs['6'] || true; // 6 up-right
+			grid[properIndex(towerX + 1, gridLength)][towerY] = stairs['7'] || true; // right 7;
 		}
 		return grid;
 	}
@@ -478,6 +582,13 @@ function Stacker(){
 			}
 		}
 		return blockCoords;
+	}
+
+	function isAtBottomOfTower(cell){
+		if(cell.up.type === GOLD){
+			return true;
+		}
+		return false;
 	}
 
   //  to account for negative indexes, we perofrm this action to translate the current index
