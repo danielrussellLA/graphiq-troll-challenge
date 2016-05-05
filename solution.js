@@ -232,6 +232,7 @@ function Stacker(){
 	var turn = 1;
 	function buildStairCase(cell){
 		console.log('determineWhichCellToAddTo is now equal to', determineWhichCellToAddTo(stairs));
+		console.log('stairs are currently:', stairs)
 		if(stairs['7'].level === 7 && turn > 1){
 			currentState === state.GAMEOVER;
 			return moveHere('left');
@@ -338,6 +339,8 @@ function Stacker(){
 
 	function determineWhichCellToAddTo(stairs){
 		var levels = [];
+		console.log('levels are:', levels);
+		console.log('calculating which stair to go to...')
 		for(var key in stairs){
 			levels.push(stairs[key].level);
 		}
@@ -404,6 +407,26 @@ function Stacker(){
 		console.log('+++++ RECORD CELL: board', board);
 	}
 
+	function moveToBottomOfTower(cell) {
+		console.log('moving to bottom')
+		if(cell.left.type === GOLD){
+			rePosition.push('up');
+			rePosition.push('left');
+		}
+		if(cell.up.type === GOLD){
+			atBottomOfTower = true;
+		}
+		if(cell.right.type === GOLD){
+			rePosition.push('down');
+			rePosition.push('right');
+		}
+		if(cell.down.type === GOLD){
+			rePosition.push('left');
+			rePosition.push('down');
+		}
+		console.log('rePosition', rePosition);
+		// console.log('found tower!');
+	}
 
 
 
@@ -424,7 +447,7 @@ function Stacker(){
 		}
 
 		if(calledOnce > 0){
-			console.log('reassigning stairStatusCompleted');
+			console.log('REASSIGNING STAIRSTATUS', stairs);
 			atBottomOfTower = false;
 			towerJustDiscovered = false;
 			stairStatusCompleted = true;
@@ -439,7 +462,7 @@ function Stacker(){
 			climbStairsDirections.push('right');
 			climbStairsDirections.push('down');
 			calledOnce++;
-			return 'pickup';
+			return 'drop';
 		}
 
 		// climbStairsDirections.push('up');
@@ -532,26 +555,7 @@ function Stacker(){
 		return false;
 	}
 
-	function moveToBottomOfTower(cell) {
-		console.log('moving to bottom')
-		if(cell.left.type === GOLD){
-			rePosition.push('up');
-			rePosition.push('left');
-		}
-		if(cell.up.type === GOLD){
-			atBottomOfTower = true;
-		}
-		if(cell.right.type === GOLD){
-			rePosition.push('down');
-			rePosition.push('right');
-		}
-		if(cell.down.type === GOLD){
-			rePosition.push('left');
-			rePosition.push('down');
-		}
-		console.log('rePosition', rePosition);
-		// console.log('found tower!');
-	}
+	
 
 	function recordCell(cell){
 		var boardLength = board.length;
