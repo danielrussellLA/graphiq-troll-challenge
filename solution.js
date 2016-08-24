@@ -8,7 +8,7 @@ function Stacker(){
   BLOCK = 2,
   GOLD = 3;
   // directions
-  var move = ['right', 'up', 'left', 'down'];
+  var move = ['left', 'up', 'right', 'down'];
   var opposite = {
     up: 'down',
     down: 'up',
@@ -20,7 +20,7 @@ function Stacker(){
   var state = {
     towerSearch: 0,
     findBlock: 1,
-    buildStairCase: 2,
+    buildStairs: 2,
     GAMEOVER: 3
   };
   // troll stats
@@ -65,13 +65,13 @@ function Stacker(){
           return moveHere(rePosition.shift()) || 'drop';
         }
         if(atBottomOfTower){
-          // clear board again so troll will re-start his smartSearch and not to search for blocks around the tower
+          // clear board again so troll will re-start his this.smartSearch and not search for blocks around the tower
           board = buildBoard(16);
           moveHistory.length = 0;
           currentState = state.findBlock;
         }
       } else {
-        return smartSearch(cell);
+        return this.smartSearch(cell);
       }
     }
 
@@ -85,13 +85,13 @@ function Stacker(){
         moveToBottomOfTower(cell);
         return moveHere(rePosition.shift()) || 'drop';
       }
-      return smartSearch(cell);
+      return this.smartSearch(cell);
     }
 
     // BUILD STAIRCASE
-    if(currentState === state.buildStairCase){
+    if(currentState === state.buildStairs){
       recordCell(cell);
-      return buildStairCase(cell);
+      return this.buildStairCase(cell);
     }
 
     // GAME OVER
@@ -102,7 +102,7 @@ function Stacker(){
   };
 
   /************************* MAIN ****************************************/
-  function smartSearch(cell){
+  this.smartSearch = function(cell){
 
     if(currentState === state.towerSearch){
       if(isAdjacentCellTower(cell)){
@@ -119,7 +119,7 @@ function Stacker(){
       }
       if(hasBlock){
         if(isAdjacentCellTower(cell)){
-          currentState = state.buildStairCase;
+          currentState = state.buildStairs;
           // you have a block so pickup will do nothing. we just want to be able to fire buildStaircase.
           return 'pickup';
         }
@@ -153,98 +153,75 @@ function Stacker(){
     return moveHere(previousMove) || moveHere(randomMove);
   }
 
-  function isCurrentCellBlock(cell){
-    if(cell.type === BLOCK){
-      return true;
-    }
-    return false;
-  }
-
-  function isAdjacentCellBlock(cell){
-    if(cell.left.type === BLOCK && board[positiveIdx(xPos - 1, board.length)][yPos].stairCaseCell !== true){
-      return 'left';
-    }
-    if(cell.up.type === BLOCK && board[xPos][positiveIdx(yPos - 1, board.length)].stairCaseCell !== true){
-      return 'up';
-    }
-    if(cell.right.type === BLOCK && board[positiveIdx(xPos + 1, board.length)][yPos].stairCaseCell !== true){
-      return 'right';
-    }
-    if(cell.down.type === BLOCK && board[xPos][positiveIdx(yPos + 1, board.length)].stairCaseCell !== true){
-      return 'down';
-    }
-    return false;
-  }
-
-  var directionsToBuildStairs = [];
+  var buildStairsDirections = [];
   var justPlacedABlock = false;
-  function buildStairCase(cell){
+  this.buildStairCase = function(cell){
     if(stairs['7'].level === 7){
       currentState = state.GAMEOVER;
       return moveHere('left');
     }
 
-    if(directionsToBuildStairs.length){
-      if(directionsToBuildStairs[0] === 'drop'){
-        return directionsToBuildStairs.shift();
+    if(buildStairsDirections.length){
+      if(buildStairsDirections[0] === 'drop'){
+        return buildStairsDirections.shift();
       }
-      return moveHere(directionsToBuildStairs.shift());
+      return moveHere(buildStairsDirections.shift());
     }
 
 
-    if(determineWhichCellToAddTo(stairs) === 7 && !justPlacedABlock){
-      directionsToBuildStairs.push('left');
-      directionsToBuildStairs.push('up');
-      directionsToBuildStairs.push('up');
-      directionsToBuildStairs.push('right');
-      directionsToBuildStairs.push('right');
-      directionsToBuildStairs.push('down');
-      directionsToBuildStairs.push('drop');
+    if(determineWhichStairToBuild(stairs) === 7 && !justPlacedABlock){
+      buildStairsDirections.push('left');
+      buildStairsDirections.push('up');
+      buildStairsDirections.push('up');
+      buildStairsDirections.push('right');
+      buildStairsDirections.push('right');
+      buildStairsDirections.push('down');
+      buildStairsDirections.push('drop');
       justPlacedABlock = true;
       return 'pickup';
     }
-    if(determineWhichCellToAddTo(stairs) === 6 && !justPlacedABlock){
-      directionsToBuildStairs.push('left');
-      directionsToBuildStairs.push('up');
-      directionsToBuildStairs.push('up');
-      directionsToBuildStairs.push('right');
-      directionsToBuildStairs.push('right');
-      directionsToBuildStairs.push('drop');
+    if(determineWhichStairToBuild(stairs) === 6 && !justPlacedABlock){
+      buildStairsDirections.push('left');
+      buildStairsDirections.push('up');
+      buildStairsDirections.push('up');
+      buildStairsDirections.push('right');
+      buildStairsDirections.push('right');
+      buildStairsDirections.push('drop');
       justPlacedABlock = true;
       return 'pickup';
     }
-    if(determineWhichCellToAddTo(stairs) === 5 && !justPlacedABlock){
-      directionsToBuildStairs.push('left');
-      directionsToBuildStairs.push('up');
-      directionsToBuildStairs.push('up');
-      directionsToBuildStairs.push('right');
-      directionsToBuildStairs.push('drop');
+    if(determineWhichStairToBuild(stairs) === 5 && !justPlacedABlock){
+      buildStairsDirections.push('left');
+      buildStairsDirections.push('up');
+      buildStairsDirections.push('up');
+      buildStairsDirections.push('right');
+      buildStairsDirections.push('drop');
       justPlacedABlock = true;
       return 'pickup';
     }
-    if(determineWhichCellToAddTo(stairs) === 4 && !justPlacedABlock){
-      directionsToBuildStairs.push('left');
-      directionsToBuildStairs.push('up');
-      directionsToBuildStairs.push('up');
-      directionsToBuildStairs.push('drop');
+    if(determineWhichStairToBuild(stairs) === 4 && !justPlacedABlock){
+      buildStairsDirections.push('left');
+      buildStairsDirections.push('up');
+      buildStairsDirections.push('up');
+      buildStairsDirections.push('drop');
       justPlacedABlock = true;
       return 'pickup';
     }
-    if(determineWhichCellToAddTo(stairs) === 3 && !justPlacedABlock){
-      directionsToBuildStairs.push('left');
-      directionsToBuildStairs.push('up');
-      directionsToBuildStairs.push('drop');
+    if(determineWhichStairToBuild(stairs) === 3 && !justPlacedABlock){
+      buildStairsDirections.push('left');
+      buildStairsDirections.push('up');
+      buildStairsDirections.push('drop');
       justPlacedABlock = true;
       return 'pickup';
     }
-    if(determineWhichCellToAddTo(stairs) === 2 && !justPlacedABlock){
-      directionsToBuildStairs.push('left');
-      directionsToBuildStairs.push('drop');
+    if(determineWhichStairToBuild(stairs) === 2 && !justPlacedABlock){
+      buildStairsDirections.push('left');
+      buildStairsDirections.push('drop');
       justPlacedABlock = true;
       return 'pickup';
     }
-    if(determineWhichCellToAddTo(stairs) === 1 && !justPlacedABlock){
-      directionsToBuildStairs.push('drop');
+    if(determineWhichStairToBuild(stairs) === 1 && !justPlacedABlock){
+      buildStairsDirections.push('drop');
       justPlacedABlock = true;
       return 'pickup';
     }
@@ -306,6 +283,29 @@ function Stacker(){
     }
   }
 
+   function isCurrentCellBlock(cell){
+    if(cell.type === BLOCK){
+      return true;
+    }
+    return false;
+  }
+
+  function isAdjacentCellBlock(cell){
+    var boardLength = board.length;
+    if(cell.left.type === BLOCK && board[positiveIdx(xPos - 1, boardLength)][yPos].stairCaseCell !== true){
+      return 'left';
+    }
+    if(cell.up.type === BLOCK && board[xPos][positiveIdx(yPos - 1, boardLength)].stairCaseCell !== true){
+      return 'up';
+    }
+    if(cell.right.type === BLOCK && board[positiveIdx(xPos + 1, boardLength)][yPos].stairCaseCell !== true){
+      return 'right';
+    }
+    if(cell.down.type === BLOCK && board[xPos][positiveIdx(yPos + 1, boardLength)].stairCaseCell !== true){
+      return 'down';
+    }
+    return false;
+  }
 
   function isAdjacentCellVisited(nextMove) {
     var boardLength = board.length;
@@ -352,7 +352,7 @@ function Stacker(){
     return false;
   }
 
-  function determineWhichCellToAddTo(stairs){
+  function determineWhichStairToBuild(stairs){
     var levels = [];
 
     for(var key in stairs){
@@ -509,7 +509,6 @@ function Stacker(){
       towerJustDiscovered = false;
     }
   }
-
 
   function buildBoard(size) {
     var grid = new Array(size);
